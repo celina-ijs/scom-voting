@@ -220,7 +220,7 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
         render() {
             return (this.$render("i-panel", { width: "100%", height: "100%", border: { radius: '0.5rem' }, background: { color: Theme.action.disabledBackground }, overflow: "hidden" },
                 this.$render("i-stack", { id: "pnlContent", class: index_css_1.votingStyle, direction: 'vertical', alignItems: 'center', justifyContent: 'center', background: { color: Theme.background.gradient } },
-                    this.$render("i-label", { id: "lblTitle", font: { size: '1.75rem', color: Theme.text.secondary, weight: 600 } })),
+                    this.$render("i-label", { id: "lblTitle", font: { size: '1.75rem', color: Theme.text.secondary, weight: 600, style: 'italic' } })),
                 this.$render("i-stack", { id: "pnlButtons", direction: "horizontal", alignItems: "center", padding: { top: '0.5rem', bottom: '0.5rem', left: '1rem', right: '1rem' }, gap: "0.5rem", visible: false })));
         }
     };

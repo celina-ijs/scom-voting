@@ -166,7 +166,7 @@ export default class ScomVoting extends Module {
                     justifyContent='center'
                     background={{ color: Theme.background.gradient }}
                 >
-                    <i-label id="lblTitle" font={{ size: '1.75rem', color: Theme.text.secondary, weight: 600 }}></i-label>
+                    <i-label id="lblTitle" font={{ size: '1.75rem', color: Theme.text.secondary, weight: 600, style: 'italic' }}></i-label>
                 </i-stack>
                 <i-stack
                     id="pnlButtons"
