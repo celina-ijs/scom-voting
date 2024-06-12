@@ -79,7 +79,15 @@ export default class ScomVoting extends Module {
     private updateVoting() {
         this.lblTitle.caption = this.data.title || '';
         if (this.data.backgroundImage) {
-            this.pnlContent.background.image = this.data.backgroundImage;
+            this.pnlContent.background = { image: this.data.backgroundImage };
+        } else {
+            this.pnlContent.background = { color: Theme.background.gradient };
+        }
+        this.lblTitle.font = {
+            size: '1.75rem',
+            color: this.data.fontColor || Theme.text.secondary,
+            weight: 600,
+            style: 'italic'
         }
         this.renderButtons();
     }

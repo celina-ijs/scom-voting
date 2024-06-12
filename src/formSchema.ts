@@ -26,6 +26,10 @@ export default {
                         }
                     }
                 }
+            },
+            fontColor: {
+                type: 'string',
+                format: 'color'
             }
         }
     },
@@ -61,20 +65,29 @@ export default {
                                         ]
                                     },
                                     {
-                                        type: 'Category',
-                                        label: 'Buttons',
+                                        type: 'HorizontalLayout',
                                         elements: [
                                             {
                                                 type: 'Control',
-                                                scope: '#/properties/buttons',
-                                                options: {
-                                                    detail: {
-                                                        type: 'VerticalLayout'
-                                                    }
-                                                }
+                                                scope: '#/properties/fontColor'
                                             }
                                         ]
-                                    },
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'Category',
+                                label: 'Buttons',
+                                elements: [
+                                    {
+                                        type: 'Control',
+                                        scope: '#/properties/buttons',
+                                        options: {
+                                            detail: {
+                                                type: 'VerticalLayout'
+                                            }
+                                        }
+                                    }
                                 ]
                             }
                         ]

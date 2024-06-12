@@ -8,6 +8,7 @@ declare module "@scom/scom-voting/interface.ts" {
         title: string;
         backgroundImage?: string;
         buttons?: IVotingButton[];
+        fontColor?: string;
     }
     export interface IVotingButton {
         value: string;
@@ -45,6 +46,10 @@ declare module "@scom/scom-voting/formSchema.ts" {
                         };
                     };
                 };
+                fontColor: {
+                    type: string;
+                    format: string;
+                };
             };
         };
         uiSchema: {
@@ -53,30 +58,29 @@ declare module "@scom/scom-voting/formSchema.ts" {
                 type: string;
                 elements: {
                     type: string;
-                    elements: {
+                    elements: ({
                         type: string;
                         label: string;
-                        elements: ({
+                        elements: {
                             type: string;
                             elements: {
                                 type: string;
                                 scope: string;
                             }[];
-                            label?: undefined;
-                        } | {
+                        }[];
+                    } | {
+                        type: string;
+                        label: string;
+                        elements: {
                             type: string;
-                            label: string;
-                            elements: {
-                                type: string;
-                                scope: string;
-                                options: {
-                                    detail: {
-                                        type: string;
-                                    };
+                            scope: string;
+                            options: {
+                                detail: {
+                                    type: string;
                                 };
-                            }[];
-                        })[];
-                    }[];
+                            };
+                        }[];
+                    })[];
                 }[];
             }[];
         };
@@ -153,6 +157,10 @@ declare module "@scom/scom-voting" {
                                 };
                             };
                         };
+                        fontColor: {
+                            type: string;
+                            format: string;
+                        };
                     };
                 };
                 userInputUISchema: {
@@ -161,30 +169,29 @@ declare module "@scom/scom-voting" {
                         type: string;
                         elements: {
                             type: string;
-                            elements: {
+                            elements: ({
                                 type: string;
                                 label: string;
-                                elements: ({
+                                elements: {
                                     type: string;
                                     elements: {
                                         type: string;
                                         scope: string;
                                     }[];
-                                    label?: undefined;
-                                } | {
+                                }[];
+                            } | {
+                                type: string;
+                                label: string;
+                                elements: {
                                     type: string;
-                                    label: string;
-                                    elements: {
-                                        type: string;
-                                        scope: string;
-                                        options: {
-                                            detail: {
-                                                type: string;
-                                            };
+                                    scope: string;
+                                    options: {
+                                        detail: {
+                                            type: string;
                                         };
-                                    }[];
-                                })[];
-                            }[];
+                                    };
+                                }[];
+                            })[];
                         }[];
                     }[];
                 };

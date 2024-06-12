@@ -48,6 +48,10 @@ define("@scom/scom-voting/formSchema.ts", ["require", "exports"], function (requ
                             }
                         }
                     }
+                },
+                fontColor: {
+                    type: 'string',
+                    format: 'color'
                 }
             }
         },
@@ -83,20 +87,29 @@ define("@scom/scom-voting/formSchema.ts", ["require", "exports"], function (requ
                                             ]
                                         },
                                         {
-                                            type: 'Category',
-                                            label: 'Buttons',
+                                            type: 'HorizontalLayout',
                                             elements: [
                                                 {
                                                     type: 'Control',
-                                                    scope: '#/properties/buttons',
-                                                    options: {
-                                                        detail: {
-                                                            type: 'VerticalLayout'
-                                                        }
-                                                    }
+                                                    scope: '#/properties/fontColor'
                                                 }
                                             ]
-                                        },
+                                        }
+                                    ]
+                                },
+                                {
+                                    type: 'Category',
+                                    label: 'Buttons',
+                                    elements: [
+                                        {
+                                            type: 'Control',
+                                            scope: '#/properties/buttons',
+                                            options: {
+                                                detail: {
+                                                    type: 'VerticalLayout'
+                                                }
+                                            }
+                                        }
                                     ]
                                 }
                             ]
@@ -144,8 +157,17 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
         updateVoting() {
             this.lblTitle.caption = this.data.title || '';
             if (this.data.backgroundImage) {
-                this.pnlContent.background.image = this.data.backgroundImage;
+                this.pnlContent.background = { image: this.data.backgroundImage };
             }
+            else {
+                this.pnlContent.background = { color: Theme.background.gradient };
+            }
+            this.lblTitle.font = {
+                size: '1.75rem',
+                color: this.data.fontColor || Theme.text.secondary,
+                weight: 600,
+                style: 'italic'
+            };
             this.renderButtons();
         }
         renderButtons() {
