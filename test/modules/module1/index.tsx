@@ -1,12 +1,37 @@
 import { Module, customModule, Container, Button } from '@ijstech/components';
 import ScomVoting from '@scom/scom-voting';
+import ScomWidgetTest from '@scom/scom-widget-test';
 
 @customModule
 export default class Module1 extends Module {
     private scomVoting: ScomVoting;
+    private widgetModule: ScomWidgetTest;
 
     constructor(parent?: Container, options?: any) {
         super(parent, options);
+    }
+
+    private async onShowConfig() {
+        const editor = this.scomVoting.getConfigurators().find(v => v.target === 'Editor');
+        const widgetData = await editor.getData();
+        if (!this.widgetModule) {
+            this.widgetModule = await ScomWidgetTest.create({
+                widgetName: 'scom-voting',
+                onConfirm: (data: any, tag: any) => {
+                    editor.setData(data);
+                    editor.setTag(tag);
+                    this.widgetModule.closeModal();
+                }
+            });
+        }
+        this.widgetModule.openModal({
+            width: '90%',
+            maxWidth: '90rem',
+            padding: { top: 0, bottom: 0, left: 0, right: 0 },
+            closeOnBackdropClick: true,
+            closeIcon: null
+        });
+        this.widgetModule.show(widgetData);
     }
 
     async init() {
@@ -40,9 +65,17 @@ export default class Module1 extends Module {
         return (
             <i-panel
                 width="580px"
-                padding={{ top: '1.25rem', bottom: '1.25rem', left: '1.25rem', right: '1.25rem' }}
             >
-                <i-scom-voting id="scomVoting" onButtonClicked={this.onButtonClicked}></i-scom-voting>
+                <i-vstack
+                    margin={{ top: '1rem', left: '1rem', right: '1rem' }}
+                    gap="1rem"
+                >
+                    <i-button caption="Config" onClick={this.onShowConfig} width={160} padding={{ top: 5, bottom: 5 }} margin={{ left: 'auto', right: 20 }} font={{ color: '#fff' }} />
+                    <i-scom-voting
+                        id="scomVoting"
+                        onButtonClicked={this.onButtonClicked}
+                    />
+                </i-vstack>
             </i-panel>
         )
     }
