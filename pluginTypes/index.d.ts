@@ -90,6 +90,7 @@ declare module "@scom/scom-voting/formSchema.ts" {
 /// <amd-module name="@scom/scom-voting" />
 declare module "@scom/scom-voting" {
     import { Module, Container, ControlElement, Control } from '@ijstech/components';
+    import { BlockNoteEditor, BlockNoteSpecs, callbackFnType, executeFnType } from '@scom/scom-blocknote-sdk';
     type callbackType = (target: Control, value: string) => void;
     interface ScomVotingElement extends ControlElement {
         onButtonClicked?: callbackType;
@@ -101,7 +102,7 @@ declare module "@scom/scom-voting" {
             }
         }
     }
-    export default class ScomVoting extends Module {
+    export default class ScomVoting extends Module implements BlockNoteSpecs {
         private pnlContent;
         private lblTitle;
         private pnlButtons;
@@ -111,6 +112,23 @@ declare module "@scom/scom-voting" {
         constructor(parent?: Container, options?: any);
         static create(options?: ScomVotingElement, parent?: Container): Promise<ScomVoting>;
         init(): Promise<void>;
+        addBlock(blocknote: any, executeFn: executeFnType, callbackFn?: callbackFnType): {
+            block: any;
+            slashItem: {
+                name: string;
+                execute: (editor: BlockNoteEditor) => void;
+                aliases: string[];
+                group: string;
+                icon: {
+                    name: string;
+                };
+                hint: string;
+            };
+            moduleData: {
+                name: string;
+                localPath: string;
+            };
+        };
         private getData;
         private setData;
         private getTag;

@@ -15,6 +15,7 @@ import {
 import { votingStyle } from './index.css';
 import { IVoting } from './interface';
 import formSchema from './formSchema';
+import { Block, BlockNoteEditor, BlockNoteSpecs, callbackFnType, executeFnType, getWidgetEmbedUrl, parseUrl } from '@scom/scom-blocknote-sdk';
 
 const Theme = Styles.Theme.ThemeVars;
 type callbackType = (target: Control, value: string) => void;
@@ -33,7 +34,7 @@ declare global {
 
 @customModule
 @customElements('i-scom-voting')
-export default class ScomVoting extends Module {
+export default class ScomVoting extends Module implements BlockNoteSpecs {
     private pnlContent: StackLayout;
     private lblTitle: Label;
     private pnlButtons: StackLayout;
@@ -57,6 +58,168 @@ export default class ScomVoting extends Module {
     async init() {
         super.init();
         this.onButtonClicked = this.getAttribute('onButtonClicked', true) || this.onButtonClicked;
+        const title = this.getAttribute('title', true);
+        const backgroundImage = this.getAttribute('backgroundImage', true);
+        const buttons = this.getAttribute('buttons', true);
+        const fontColor = this.getAttribute('fontColor', true);
+        if (title || buttons) {
+            this.setData({ title, backgroundImage, buttons, fontColor });
+        }
+    }
+
+    addBlock(blocknote: any, executeFn: executeFnType, callbackFn?: callbackFnType) {
+        const blockType = 'voting';
+        const moduleData = {
+            name: '@scom/scom-voting',
+            localPath: 'scom-voting'
+        };
+
+        const votingRegex = /https:\/\/widget.noto.fan\/(#!\/)?scom\/scom-voting\/\S+/g;
+        function getData(href: string) {
+            const widgetData = parseUrl(href);
+            if (widgetData) {
+                const { module, properties } = widgetData;
+                if (module.localPath === moduleData.localPath) return { ...properties };
+            }
+            return false;
+        }
+
+        const VotingBlock = blocknote.createBlockSpec(
+            {
+                type: blockType,
+                propSchema: {
+                    ...blocknote.defaultProps,
+                    title: { default: '' },
+                    backgroundImage: { default: '' },
+                    buttons: { default: [] },
+                    fontColor: { default: '' }
+                },
+                content: 'none'
+            },
+            {
+                render: (block: Block) => {
+                    const wrapper = new Panel();
+                    const props = JSON.parse(JSON.stringify(block.props));
+                    wrapper.maxWidth = 780;
+                    const customElm = new ScomVoting(wrapper, { ...props });
+                    if (typeof callbackFn === 'function') {
+                        callbackFn(customElm, block);
+                    }
+                    wrapper.appendChild(customElm);
+                    return {
+                        dom: wrapper
+                    }
+                },
+                parseFn: () => {
+                    return [
+                        {
+                            tag: `div[data-content-type=${blockType}]`,
+                            node: blockType
+                        },
+                        {
+                            tag: "a",
+                            getAttrs: (element: string | HTMLElement) => {
+                                if (typeof element === "string") {
+                                    return false;
+                                }
+                                const href = element.getAttribute('href');
+                                if (href) return getData(href);
+                                return false;
+                            },
+                            priority: 408,
+                            node: blockType
+                        },
+                        {
+                            tag: "p",
+                            getAttrs: (element: string | HTMLElement) => {
+                                if (typeof element === "string") {
+                                    return false;
+                                }
+                                const child = element.firstChild as HTMLElement;
+                                if (child?.nodeName === 'A' && child.getAttribute('href')) {
+                                    const href = child.getAttribute('href');
+                                    return getData(href);
+                                }
+                                return false;
+                            },
+                            priority: 409,
+                            node: blockType
+                        }
+                    ]
+                },
+                toExternalHTML: (block: any, editor: any) => {
+                    const link = document.createElement("a");
+                    const url = getWidgetEmbedUrl(
+                        {
+                            type: blockType,
+                            props: { ...(block.props || {}) }
+                        },
+                        moduleData
+                    );
+                    link.setAttribute("href", url);
+                    link.textContent = blockType;
+                    const wrapper = document.createElement("p");
+                    wrapper.appendChild(link);
+                    return { dom: wrapper }
+                },
+                pasteRules: [
+                    {
+                        find: votingRegex,
+                        handler(props: any) {
+                            const { state, chain, range } = props;
+                            const textContent = state.doc.resolve(range.from).nodeAfter?.textContent;
+                            const widgetData = parseUrl(textContent);
+                            if (!widgetData) return null;
+                            const { properties } = widgetData;
+                            chain().BNUpdateBlock(state.selection.from, {
+                                type: blockType,
+                                props: {
+                                    ...properties
+                                },
+                            }).setTextSelection(range.from + 1);
+                        }
+                    }
+                ]
+            }
+        );
+        const VotingSlashItem = {
+            name: "Voting",
+            execute: (editor: BlockNoteEditor) => {
+                const block: any = {
+                    type: blockType,
+                    props: {
+                        title: 'Do you schedule casts?',
+                        buttons: [
+                            {
+                                value: 'yes',
+                                label: 'Yes'
+                            },
+                            {
+                                value: 'no',
+                                label: 'No'
+                            },
+                            {
+                                value: 'sometimes',
+                                label: 'Sometimes'
+                            }
+                        ]
+                    }
+                };
+                if (typeof executeFn === 'function') {
+                    executeFn(editor, block);
+                }
+            },
+            aliases: [blockType, "widget"],
+            group: "Widget",
+            icon: { name: 'vote-yea' },
+            hint: "Insert a voting widget"
+        };
+
+        return {
+            block: VotingBlock,
+            slashItem: VotingSlashItem,
+            moduleData
+        }
     }
 
     private getData() {
@@ -117,7 +280,7 @@ export default class ScomVoting extends Module {
     }
 
     private handleButtonClick(target: Button, value: string) {
-        if (this.onButtonClicked)
+        if (typeof this.onButtonClicked === 'function')
             this.onButtonClicked(target, value);
     }
 
