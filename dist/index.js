@@ -120,11 +120,12 @@ define("@scom/scom-voting/formSchema.ts", ["require", "exports"], function (requ
         }
     };
 });
-define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom/scom-voting/index.css.ts", "@scom/scom-voting/formSchema.ts"], function (require, exports, components_2, index_css_1, formSchema_1) {
+define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom/scom-voting/index.css.ts", "@scom/scom-voting/formSchema.ts", "@scom/scom-blocknote-sdk"], function (require, exports, components_2, index_css_1, formSchema_1, scom_blocknote_sdk_1) {
     "use strict";
+    var ScomVoting_1;
     Object.defineProperty(exports, "__esModule", { value: true });
     const Theme = components_2.Styles.Theme.ThemeVars;
-    let ScomVoting = class ScomVoting extends components_2.Module {
+    let ScomVoting = ScomVoting_1 = class ScomVoting extends components_2.Module {
         constructor(parent, options) {
             super(parent, options);
             this.data = {
@@ -140,6 +141,161 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
         async init() {
             super.init();
             this.onButtonClicked = this.getAttribute('onButtonClicked', true) || this.onButtonClicked;
+            const title = this.getAttribute('title', true);
+            const backgroundImage = this.getAttribute('backgroundImage', true);
+            const buttons = this.getAttribute('buttons', true);
+            const fontColor = this.getAttribute('fontColor', true);
+            if (title || buttons) {
+                this.setData({ title, backgroundImage, buttons, fontColor });
+            }
+        }
+        addBlock(blocknote, executeFn, callbackFn) {
+            const blockType = 'voting';
+            const moduleData = {
+                name: '@scom/scom-voting',
+                localPath: 'scom-voting'
+            };
+            const votingRegex = /https:\/\/widget.noto.fan\/(#!\/)?scom\/scom-voting\/\S+/g;
+            function getData(href) {
+                const widgetData = (0, scom_blocknote_sdk_1.parseUrl)(href);
+                if (widgetData) {
+                    const { module, properties } = widgetData;
+                    if (module.localPath === moduleData.localPath)
+                        return { ...properties };
+                }
+                return false;
+            }
+            const VotingBlock = blocknote.createBlockSpec({
+                type: blockType,
+                propSchema: {
+                    ...blocknote.defaultProps,
+                    title: { default: '' },
+                    backgroundImage: { default: '' },
+                    buttons: { default: [] },
+                    fontColor: { default: '' }
+                },
+                content: 'none'
+            }, {
+                render: (block) => {
+                    const wrapper = new components_2.Panel();
+                    const props = JSON.parse(JSON.stringify(block.props));
+                    wrapper.maxWidth = 780;
+                    const customElm = new ScomVoting_1(wrapper, { ...props });
+                    if (typeof callbackFn === 'function') {
+                        callbackFn(customElm, block);
+                    }
+                    wrapper.appendChild(customElm);
+                    return {
+                        dom: wrapper
+                    };
+                },
+                parseFn: () => {
+                    return [
+                        {
+                            tag: `div[data-content-type=${blockType}]`,
+                            node: blockType
+                        },
+                        {
+                            tag: "a",
+                            getAttrs: (element) => {
+                                if (typeof element === "string") {
+                                    return false;
+                                }
+                                const href = element.getAttribute('href');
+                                if (href)
+                                    return getData(href);
+                                return false;
+                            },
+                            priority: 408,
+                            node: blockType
+                        },
+                        {
+                            tag: "p",
+                            getAttrs: (element) => {
+                                if (typeof element === "string") {
+                                    return false;
+                                }
+                                const child = element.firstChild;
+                                if (child?.nodeName === 'A' && child.getAttribute('href')) {
+                                    const href = child.getAttribute('href');
+                                    return getData(href);
+                                }
+                                return false;
+                            },
+                            priority: 409,
+                            node: blockType
+                        }
+                    ];
+                },
+                toExternalHTML: (block, editor) => {
+                    const link = document.createElement("a");
+                    const url = (0, scom_blocknote_sdk_1.getWidgetEmbedUrl)({
+                        type: blockType,
+                        props: { ...(block.props || {}) }
+                    }, moduleData);
+                    link.setAttribute("href", url);
+                    link.textContent = blockType;
+                    const wrapper = document.createElement("p");
+                    wrapper.appendChild(link);
+                    return { dom: wrapper };
+                },
+                pasteRules: [
+                    {
+                        find: votingRegex,
+                        handler(props) {
+                            const { state, chain, range } = props;
+                            const textContent = state.doc.resolve(range.from).nodeAfter?.textContent;
+                            const widgetData = (0, scom_blocknote_sdk_1.parseUrl)(textContent);
+                            if (!widgetData)
+                                return null;
+                            const { properties } = widgetData;
+                            chain().BNUpdateBlock(state.selection.from, {
+                                type: blockType,
+                                props: {
+                                    ...properties
+                                },
+                            }).setTextSelection(range.from + 1);
+                        }
+                    }
+                ]
+            });
+            const VotingSlashItem = {
+                name: "Voting",
+                execute: (editor) => {
+                    const block = {
+                        type: blockType,
+                        props: {
+                            title: 'Do you schedule casts?',
+                            buttons: [
+                                {
+                                    value: 'yes',
+                                    label: 'Yes'
+                                },
+                                {
+                                    value: 'no',
+                                    label: 'No'
+                                },
+                                {
+                                    value: 'sometimes',
+                                    label: 'Sometimes'
+                                }
+                            ]
+                        }
+                    };
+                    if (typeof executeFn === 'function') {
+                        executeFn(editor, block);
+                    }
+                },
+                aliases: [blockType, "widget"],
+                group: "Widget",
+                icon: { name: 'vote-yea' },
+                hint: "Insert a voting widget"
+            };
+            return {
+                block: VotingBlock,
+                slashItem: VotingSlashItem,
+                moduleData
+            };
         }
         getData() {
             return this.data;
@@ -194,7 +350,7 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
             }
         }
         handleButtonClick(target, value) {
-            if (this.onButtonClicked)
+            if (typeof this.onButtonClicked === 'function')
                 this.onButtonClicked(target, value);
         }
         getConfigurators() {
@@ -246,7 +402,7 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
                 this.$render("i-stack", { id: "pnlButtons", direction: "horizontal", alignItems: "center", padding: { top: '0.5rem', bottom: '0.5rem', left: '1rem', right: '1rem' }, gap: "0.5rem", visible: false })));
         }
     };
-    ScomVoting = __decorate([
+    ScomVoting = ScomVoting_1 = __decorate([
         components_2.customModule,
         (0, components_2.customElements)('i-scom-voting')
     ], ScomVoting);
