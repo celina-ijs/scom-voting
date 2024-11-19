@@ -120,7 +120,74 @@ define("@scom/scom-voting/formSchema.ts", ["require", "exports"], function (requ
         }
     };
 });
-define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom/scom-voting/index.css.ts", "@scom/scom-voting/formSchema.ts", "@scom/scom-blocknote-sdk"], function (require, exports, components_2, index_css_1, formSchema_1, scom_blocknote_sdk_1) {
+define("@scom/scom-voting/model.ts", ["require", "exports", "@scom/scom-voting/formSchema.ts"], function (require, exports, formSchema_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Model = void 0;
+    class Model {
+        constructor(module) {
+            this.data = { title: '' };
+            this.module = module;
+        }
+        getData() {
+            return this.data;
+        }
+        async setData(value) {
+            this.data = value;
+            this.updateVoting();
+        }
+        getTag() {
+            return this.module.tag;
+        }
+        async setTag(value) {
+            this.module.tag = value;
+        }
+        getConfigurators() {
+            return [
+                {
+                    name: 'Editor',
+                    target: 'Editor',
+                    getActions: () => {
+                        return this._getActions();
+                    },
+                    getData: this.getData.bind(this),
+                    setData: this.setData.bind(this),
+                    getTag: this.getTag.bind(this),
+                    setTag: this.setTag.bind(this)
+                }
+            ];
+        }
+        _getActions() {
+            const actions = [
+                {
+                    name: 'Edit',
+                    icon: 'edit',
+                    command: (builder, userInputData) => {
+                        let oldData = { title: '' };
+                        return {
+                            execute: () => {
+                                oldData = JSON.parse(JSON.stringify(this.data));
+                                if (builder?.setData)
+                                    builder.setData(userInputData);
+                            },
+                            undo: () => {
+                                this.data = JSON.parse(JSON.stringify(oldData));
+                                if (builder?.setData)
+                                    builder.setData(this.data);
+                            },
+                            redo: () => { }
+                        };
+                    },
+                    userInputDataSchema: formSchema_1.default.dataSchema,
+                    userInputUISchema: formSchema_1.default.uiSchema
+                }
+            ];
+            return actions;
+        }
+    }
+    exports.Model = Model;
+});
+define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom/scom-voting/index.css.ts", "@scom/scom-blocknote-sdk", "@scom/scom-voting/model.ts"], function (require, exports, components_2, index_css_1, scom_blocknote_sdk_1, model_1) {
     "use strict";
     var ScomVoting_1;
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -128,10 +195,8 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
     let ScomVoting = ScomVoting_1 = class ScomVoting extends components_2.Module {
         constructor(parent, options) {
             super(parent, options);
-            this.data = {
-                title: ''
-            };
             this.tag = {};
+            this.initModel();
         }
         static async create(options, parent) {
             let self = new this(parent, options);
@@ -297,30 +362,34 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
                 moduleData
             };
         }
+        getConfigurators() {
+            this.initModel();
+            return this.model.getConfigurators();
+        }
         getData() {
-            return this.data;
+            return this.model.getData();
         }
         async setData(value) {
-            this.data = value;
-            this.updateVoting();
+            this.model.setData(value);
         }
         getTag() {
             return this.tag;
         }
         async setTag(value) {
-            this.tag = value;
+            this.model.setTag(value);
         }
         updateVoting() {
-            this.lblTitle.caption = this.data.title || '';
-            if (this.data.backgroundImage) {
-                this.pnlContent.background = { image: this.data.backgroundImage };
+            const { title, backgroundImage, fontColor } = this.model.getData();
+            this.lblTitle.caption = title || '';
+            if (backgroundImage) {
+                this.pnlContent.background = { image: backgroundImage };
             }
             else {
                 this.pnlContent.background = { color: Theme.background.gradient };
             }
             this.lblTitle.font = {
                 size: '1.75rem',
-                color: this.data.fontColor || Theme.text.secondary,
+                color: fontColor || Theme.text.secondary,
                 weight: 600,
                 style: 'italic'
             };
@@ -328,12 +397,13 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
         }
         renderButtons() {
             this.pnlButtons.clearInnerHTML();
-            if (!this.data.buttons) {
+            const { buttons } = this.model.getData();
+            if (!buttons) {
                 this.pnlButtons.visible = false;
                 return;
             }
             this.pnlButtons.visible = true;
-            for (let data of this.data.buttons) {
+            for (let data of buttons) {
                 const button = new components_2.Button(undefined, {
                     caption: data.label || data.value || '',
                     height: '2.25rem',
@@ -353,47 +423,11 @@ define("@scom/scom-voting", ["require", "exports", "@ijstech/components", "@scom
             if (typeof this.onButtonClicked === 'function')
                 this.onButtonClicked(target, value);
         }
-        getConfigurators() {
-            return [
-                {
-                    name: 'Editor',
-                    target: 'Editor',
-                    getActions: () => {
-                        return this._getActions();
-                    },
-                    getData: this.getData.bind(this),
-                    setData: this.setData.bind(this),
-                    getTag: this.getTag.bind(this),
-                    setTag: this.setTag.bind(this)
-                }
-            ];
-        }
-        _getActions() {
-            const actions = [
-                {
-                    name: 'Edit',
-                    icon: 'edit',
-                    command: (builder, userInputData) => {
-                        let oldData = { title: '' };
-                        return {
-                            execute: () => {
-                                oldData = JSON.parse(JSON.stringify(this.data));
-                                if (builder?.setData)
-                                    builder.setData(userInputData);
-                            },
-                            undo: () => {
-                                this.data = JSON.parse(JSON.stringify(oldData));
-                                if (builder?.setData)
-                                    builder.setData(this.data);
-                            },
-                            redo: () => { }
-                        };
-                    },
-                    userInputDataSchema: formSchema_1.default.dataSchema,
-                    userInputUISchema: formSchema_1.default.uiSchema
-                }
-            ];
-            return actions;
+        initModel() {
+            if (!this.model) {
+                this.model = new model_1.Model(this);
+                this.model.updateVoting = this.updateVoting.bind(this);
+            }
         }
         render() {
             return (this.$render("i-panel", { width: "100%", height: "100%", border: { radius: '0.5rem' }, background: { color: Theme.action.disabledBackground }, overflow: "hidden" },

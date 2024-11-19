@@ -27,6 +27,7 @@ export default class Module1 extends Module {
         this.widgetModule.openModal({
             width: '90%',
             maxWidth: '90rem',
+            minHeight: 400,
             padding: { top: 0, bottom: 0, left: 0, right: 0 },
             closeOnBackdropClick: true,
             closeIcon: null
@@ -64,11 +65,15 @@ export default class Module1 extends Module {
     render() {
         return (
             <i-panel
-                width="580px"
+                width="100%"
             >
                 <i-vstack
-                    margin={{ top: '1rem', left: '1rem', right: '1rem' }}
+                    verticalAlignment="center"
+                    margin={{ top: '1rem', left: 'auto', right: 'auto' }}
+                    padding={{ left: '1rem', right: '1rem' }}
                     gap="1rem"
+                    width={600}
+                    maxWidth="100%"
                 >
                     <i-button caption="Config" onClick={this.onShowConfig} width={160} padding={{ top: 5, bottom: 5 }} margin={{ left: 'auto', right: 20 }} font={{ color: '#fff' }} />
                     <i-scom-voting
