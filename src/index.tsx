@@ -1,21 +1,20 @@
 import {
     Module,
     customModule,
-    IDataSchema,
     Container,
     ControlElement,
     customElements,
-    Panel,
     Control,
     Styles,
     StackLayout,
     Label,
+    Panel,
     Button
 } from '@ijstech/components';
 import { votingStyle } from './index.css';
 import { IVoting } from './interface';
-import formSchema from './formSchema';
 import { Block, BlockNoteEditor, BlockNoteSpecs, callbackFnType, executeFnType, getWidgetEmbedUrl, parseUrl } from '@scom/scom-blocknote-sdk';
+import { Model } from './model';
 
 const Theme = Styles.Theme.ThemeVars;
 type callbackType = (target: Control, value: string) => void;
@@ -35,18 +34,17 @@ declare global {
 @customModule
 @customElements('i-scom-voting')
 export default class ScomVoting extends Module implements BlockNoteSpecs {
+    private model: Model;
     private pnlContent: StackLayout;
     private lblTitle: Label;
     private pnlButtons: StackLayout;
-    private data: IVoting = {
-        title: ''
-    };
 
     tag: any = {};
     onButtonClicked: callbackType;
 
     constructor(parent?: Container, options?: any) {
         super(parent, options);
+        this.initModel();
     }
 
     static async create(options?: ScomVotingElement, parent?: Container) {
@@ -222,33 +220,38 @@ export default class ScomVoting extends Module implements BlockNoteSpecs {
         }
     }
 
-    private getData() {
-        return this.data
+    getConfigurators() {
+        this.initModel();
+        return this.model.getConfigurators();
+    }
+
+    getData() {
+        return this.model.getData();
     }
 
     private async setData(value: IVoting) {
-        this.data = value;
-        this.updateVoting();
+        this.model.setData(value);
     }
 
-    private getTag() {
-        return this.tag
+    getTag() {
+        return this.tag;
     }
 
-    private async setTag(value: any) {
-        this.tag = value;
+    async setTag(value: any) {
+        this.model.setTag(value);
     }
 
     private updateVoting() {
-        this.lblTitle.caption = this.data.title || '';
-        if (this.data.backgroundImage) {
-            this.pnlContent.background = { image: this.data.backgroundImage };
+        const { title, backgroundImage, fontColor } = this.model.getData();
+        this.lblTitle.caption = title || '';
+        if (backgroundImage) {
+            this.pnlContent.background = { image: backgroundImage };
         } else {
             this.pnlContent.background = { color: Theme.background.gradient };
         }
         this.lblTitle.font = {
             size: '1.75rem',
-            color: this.data.fontColor || Theme.text.secondary,
+            color: fontColor || Theme.text.secondary,
             weight: 600,
             style: 'italic'
         }
@@ -257,12 +260,13 @@ export default class ScomVoting extends Module implements BlockNoteSpecs {
 
     private renderButtons() {
         this.pnlButtons.clearInnerHTML();
-        if (!this.data.buttons) {
+        const { buttons } = this.model.getData();
+        if (!buttons) {
             this.pnlButtons.visible = false;
             return;
         }
         this.pnlButtons.visible = true;
-        for (let data of this.data.buttons) {
+        for (let data of buttons) {
             const button = new Button(undefined, {
                 caption: data.label || data.value || '',
                 height: '2.25rem',
@@ -284,46 +288,11 @@ export default class ScomVoting extends Module implements BlockNoteSpecs {
             this.onButtonClicked(target, value);
     }
 
-    getConfigurators() {
-        return [
-            {
-                name: 'Editor',
-                target: 'Editor',
-                getActions: () => {
-                    return this._getActions();
-                },
-                getData: this.getData.bind(this),
-                setData: this.setData.bind(this),
-                getTag: this.getTag.bind(this),
-                setTag: this.setTag.bind(this)
-            }
-        ]
-    }
-
-    private _getActions() {
-        const actions = [
-            {
-                name: 'Edit',
-                icon: 'edit',
-                command: (builder: any, userInputData: any) => {
-                    let oldData: IVoting = { title: '' };
-                    return {
-                        execute: () => {
-                            oldData = JSON.parse(JSON.stringify(this.data));
-                            if (builder?.setData) builder.setData(userInputData);
-                        },
-                        undo: () => {
-                            this.data = JSON.parse(JSON.stringify(oldData));
-                            if (builder?.setData) builder.setData(this.data);
-                        },
-                        redo: () => { }
-                    }
-                },
-                userInputDataSchema: formSchema.dataSchema,
-                userInputUISchema: formSchema.uiSchema
-            }
-        ]
-        return actions;
+    private initModel() {
+        if (!this.model) {
+            this.model = new Model(this);
+            this.model.updateVoting = this.updateVoting.bind(this);
+        }
     }
 
     render() {
